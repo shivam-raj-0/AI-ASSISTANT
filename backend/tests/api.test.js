@@ -25,7 +25,8 @@ function createInProcessClient() {
     }
   });
 
-  function request(method, path, body = null, extraHeaders = {}) {
+  function request(method, path, body = null, extraHeaders = {}, options = {}) {
+    const prefix = options.prefix !== undefined ? options.prefix : '/api';
     return new Promise((resolve, reject) => {
       const payload = body !== null ? Buffer.from(JSON.stringify(body), 'utf8') : null;
       const socket = new Duplex({
@@ -38,7 +39,7 @@ function createInProcessClient() {
 
       const req = new http.IncomingMessage(socket);
       req.method = method;
-      req.url = `/api${path}`;
+      req.url = `${prefix}${path}`;
       req.headers = {
         host: '127.0.0.1',
         ...(payload ? { 'content-type': 'application/json', 'content-length': String(payload.length) } : {}),
@@ -84,9 +85,14 @@ function createInProcessClient() {
   }
 
   return {
+    db,
     request,
     close() {
-      db.close();
+      try {
+        db.close();
+      } catch {
+        // Ignore if already closed during failure simulation
+      }
     }
   };
 }
@@ -191,6 +197,31 @@ test('Context update affects recommendations and dashboard endpoints', async () 
     const applyRes = await client.request('POST', `/recommendations/${topId}/apply`, { action: 'start' });
     assert.equal(applyRes.status, 200);
     assert.equal(applyRes.body.task.status, 'in_progress');
+  } finally {
+    client.close();
+  }
+});
+
+test('GET /healthz checks server and database connectivity safely without leaking secrets', async () => {
+  const client = createInProcessClient();
+  try {
+    const okRes = await client.request('GET', '/healthz', null, {}, { prefix: '' });
+    assert.equal(okRes.status, 200);
+    assert.equal(okRes.headers['x-powered-by'], undefined);
+    assert.equal(okRes.headers['x-content-type-options'], 'nosniff');
+    assert.deepEqual(Object.keys(okRes.body).sort(), ['service', 'status', 'timestamp']);
+    assert.equal(okRes.body.status, 'ok');
+    assert.equal(okRes.body.service, 'SmartMate AI Backend');
+    assert.ok(!Number.isNaN(Date.parse(okRes.body.timestamp)));
+
+    // Simulate database unavailability safely
+    client.close();
+    const failRes = await client.request('GET', '/healthz', null, {}, { prefix: '' });
+    assert.equal(failRes.status, 503);
+    assert.deepEqual(Object.keys(failRes.body).sort(), ['service', 'status', 'timestamp']);
+    assert.equal(failRes.body.status, 'error');
+    assert.equal(failRes.body.service, 'SmartMate AI Backend');
+    assert.ok(!Number.isNaN(Date.parse(failRes.body.timestamp)));
   } finally {
     client.close();
   }

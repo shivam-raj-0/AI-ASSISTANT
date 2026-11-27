@@ -169,6 +169,11 @@ function createDbRepository(db) {
       db.close();
     },
 
+    ping() {
+      const row = db.prepare('SELECT 1 AS ok').get();
+      return Boolean(row && row.ok === 1);
+    },
+
     listTasks({ status, category, priority } = {}) {
       const clauses = [];
       const params = [];

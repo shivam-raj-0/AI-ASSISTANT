@@ -6,7 +6,7 @@ import { buildSecurityMiddleware } from './middleware/security.js';
 import { createChatRouter } from './routes/chat.js';
 import { createContextRouter } from './routes/context.js';
 import { createDashboardRouter } from './routes/dashboard.js';
-import { createHealthRouter } from './routes/health.js';
+import { createHealthRouter, createHealthzHandler } from './routes/health.js';
 import { createRecommendationsRouter } from './routes/recommendations.js';
 import { createTasksRouter } from './routes/tasks.js';
 
@@ -22,6 +22,9 @@ export function createApp(options = {}) {
   app.use(helmetMiddleware);
   app.use(corsMiddleware);
   app.use(express.json({ limit: '64kb' }));
+
+  app.get('/healthz', createHealthzHandler(db));
+
   app.use('/api', apiLimiter);
 
   app.use('/api/health', createHealthRouter(config));
