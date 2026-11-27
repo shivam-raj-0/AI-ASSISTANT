@@ -1,0 +1,18 @@
+{
+  "name": "smartmate-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SmartMate AI - Your Context-Aware Personal Assistant",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm --prefix frontend run build",
+    "test": "npm --prefix backend test",
+    "start": "npm --prefix backend start"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}

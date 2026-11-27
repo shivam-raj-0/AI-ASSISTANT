@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Local SQLite database files
+*.sqlite
+*.sqlite3
+*.db
+data/
+backend/data/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+*.log
